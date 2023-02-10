@@ -4,16 +4,17 @@ import (
 	"github.com/ThreeDotsLabs/watermill/message"
 )
 
-func Middleware(errorHandler func(err error) error) message.HandlerMiddleware {
-	if errorHandler == nil {
-		errorHandler = func(err error) error {
-			return err
-		}
+func Middleware(handles ...func(*message.Message, error) error) message.HandlerMiddleware {
+	var handle func(*message.Message, error) error
+	if len(handles) == 0 {
+		handle = func(msg *message.Message, err error) error { return err }
+	} else {
+		handle = handles[0]
 	}
 	return func(h message.HandlerFunc) message.HandlerFunc {
 		return func(msg *message.Message) ([]*message.Message, error) {
 			msgs, err := h(msg)
-			err = errorHandler(err)
+			err = handle(msg, err)
 			return msgs, err
 		}
 	}
